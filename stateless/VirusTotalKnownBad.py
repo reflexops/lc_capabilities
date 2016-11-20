@@ -60,9 +60,10 @@ class VirusTotalKnownBad ( StatelessActor ):
             if vtReport.isSuccess:
                 report = {}
                 info = vtReport.data[ 'report' ]
-                for av, r in info.iteritems():
-                    if r is not None:
-                        report[ av[ 0 ] ] = r
+                if info is not None:
+                    for av, r in info.iteritems():
+                        if r is not None:
+                            report[ av[ 0 ] ] = r
                 if self.threshold > len( report ):
                     report = None
 

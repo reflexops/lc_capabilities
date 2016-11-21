@@ -48,7 +48,7 @@ class WinScriptedPayload ( StatefulActor ):
                                              priority = 70,
                                              summary = 'A script engine has ',
                                              parentRegExp = scriptEngines,
-                                             childRegExp = sensitiveApps,
-                                             isDirectOnly = False )
+                                             isDirectOnly = False,
+                                             childRegExp = sensitiveApps )
 
         self.addStateMachineDescriptor( scriptedPayload )

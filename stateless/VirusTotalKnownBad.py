@@ -63,7 +63,7 @@ class VirusTotalKnownBad ( StatelessActor ):
                 if info is not None:
                     for av, r in info.iteritems():
                         if r is not None:
-                            report[ av[ 0 ] ] = r
+                            report[ av ] = r
                 if self.threshold > len( report ):
                     report = None
 

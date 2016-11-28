@@ -42,6 +42,7 @@ _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 class WinSuspCmdLine ( StatelessActor ):
     def init( self, parameters, resources ):
         super( WinSuspCmdLine, self ).init( parameters, resources )
+        self.b64re = re.compile( '([A-Za-z0-9+/]{3,})' )
         self.scmd = { 'rtlo' : re.compile( r'.*\xE2\x80\x8F.*' ),}
 
     def process( self, detects, msg ):
@@ -54,14 +55,13 @@ class WinSuspCmdLine ( StatelessActor ):
                 isSusp = True
                 break
 
-            for token in cmdLine.split( ' ' ):
-                if 20 < len( token ):
-                    try:
-                        base64.b64decode( token )
-                        isSusp = True
-                        break
-                    except:
-                        pass
+            for possibleB64 in self.b64re.findall( cmdLine ):
+                try:
+                    base64.b64decode( token )
+                    isSusp = True
+                    break
+                except:
+                    pass
 
             if isSusp: break
 

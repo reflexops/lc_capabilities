@@ -56,12 +56,13 @@ class WinSuspCmdLine ( StatelessActor ):
                 break
 
             for possibleB64 in self.b64re.findall( cmdLine ):
-                try:
-                    base64.b64decode( token )
-                    isSusp = True
-                    break
-                except:
-                    pass
+                if 20 <= len( possibleB64 ):
+                    try:
+                        base64.b64decode( token )
+                        isSusp = True
+                        break
+                    except:
+                        pass
 
             if isSusp: break
 

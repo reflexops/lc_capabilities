@@ -43,7 +43,7 @@ class WinScriptedPayload ( StatefulActor ):
 
         scriptEngines = re.compile( r'.*(/|\\)((wscript))\.exe', re.IGNORECASE )
         sensitiveApps = re.compile( r'.*(/|\\)((((rundll32)|(explorer)|(iexplore)|(svchost)|(calc)|(notepad))\.exe)|((?<!\.exe)$))', re.IGNORECASE )
-        suspiciousDocs = re.compile( r'.*\.(exe|bat|vbs|js)', re.IGNORECASE )
+        suspiciousDocs = re.compile( r'.*\.(exe|bat|vbs|js|hta|scr)', re.IGNORECASE )
         
         scriptedPayload = ProcessDescendant( name = 'windows_scripted_payload',
                                              priority = 90,

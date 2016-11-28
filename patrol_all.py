@@ -205,6 +205,27 @@ Patrol( 'WinSuspExecName',
             'n_concurrent' : 5 } )
 
 #######################################
+# stateless/WinSuspCmdLine
+# This actor looks for execution from
+# executables with suspicious names that
+# try to hide the fact the files are
+# executables.
+#######################################
+Patrol( 'WinSuspCmdLine',
+        initialInstances = 1,
+        maxInstances = None,
+        relaunchOnFailure = True,
+        onFailureCall = None,
+        scalingFactor = 1000,
+        actorArgs = ( 'stateless/WinSuspCmdLine',
+                      [ 'analytics/stateless/windows/notification.NEW_PROCESS/suspcmdline/1.0', ] ),
+        actorKwArgs = {
+            'parameters' : {},
+            'secretIdent' : 'analysis/038528f5-5135-4ca8-b79f-d6b8ffc53bf5',
+            'trustedIdents' : [ 'analysis/038528f5-5135-4ca8-b79f-d6b8ffc53bf5' ],
+            'n_concurrent' : 5 } )
+
+#######################################
 # stateless/ShadowVolumeTampering
 # This actor looks for execution changing
 # the Windows shadow volumes.

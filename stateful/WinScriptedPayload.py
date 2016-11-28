@@ -42,13 +42,23 @@ class WinScriptedPayload ( StatefulActor ):
         self.shardingKey = 'agentid'
 
         scriptEngines = re.compile( r'.*(/|\\)((wscript))\.exe', re.IGNORECASE )
-        sensitiveApps = re.compile( r'.*(/|\\)((((cmd)|(nslookup)|(ipconfig)|(wmic)|(whoami)|(systeminfo))\.exe)|((?<!\.exe)$))', re.IGNORECASE )
+        sensitiveApps = re.compile( r'.*(/|\\)((((rundll32)|(explorer)|(iexplore)|(svchost)|(calc)|(notepad))\.exe)|((?<!\.exe)$))', re.IGNORECASE )
+        suspiciousDocs = re.compile( r'.*\.(exe|bat|vbs|js)', re.IGNORECASE )
         
         scriptedPayload = ProcessDescendant( name = 'windows_scripted_payload',
-                                             priority = 70,
-                                             summary = 'A script engine has ',
+                                             priority = 90,
+                                             summary = 'A script engine has executed what looks like a suspicious payload',
                                              parentRegExp = scriptEngines,
                                              isDirectOnly = False,
                                              childRegExp = sensitiveApps )
 
         self.addStateMachineDescriptor( scriptedPayload )
+
+        scriptedPayloadDrop = ProcessDescendant( name = 'windows_scripted_payload_drop',
+                                                 priority = 70,
+                                                 summary = 'A script engine has dropped a suspicious file',
+                                                 parentRegExp = scriptEngines,
+                                                 isDirectOnly = False,
+                                                 documentRegExp = suspiciousDocs )
+
+        self.addStateMachineDescriptor( scriptedPayloadDrop )

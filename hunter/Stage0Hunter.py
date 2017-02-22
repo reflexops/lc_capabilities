@@ -18,7 +18,7 @@
 LC_DETECTION_MTD_START
 {
     "type" : "hunter",
-    "description" : "Test hunter that tries to gather additional context for a human.",
+    "description" : "Generic investigation of what looks like a stage 0.",
     "requirements" : "",
     "feeds" : [],
     "platform" : "all",
@@ -42,21 +42,27 @@ MemoryAccess = Actor.importLib( 'utils/hcp_helpers', 'MemoryAccess' )
 MemoryType = Actor.importLib( 'utils/hcp_helpers', 'MemoryType' )
 normalAtom = Actor.importLib( 'utils/hcp_helpers', 'normalAtom' )
 
-class TestHunter ( Hunter ):
-    detects = ( 'TestDetection', )
+class Stage0Hunter ( Hunter ):
+    detects = ( 'WinSuspExecLoc', 'WinSuspExecName' )
 
     def init( self, parameters, resources ):
-        super( RPGenericHunter, self ).init( parameters )
+        super( Stage0Hunter, self ).init( parameters )
 
     def investigate( self, investigation, detect ):
         source = detect[ 'source' ].split( ' / ' )[ 0 ]
         inv_id = detect[ 'detect_id' ]
         data = detect[ 'detect' ]
         pid = _x_( data, '?/base.PROCESS_ID' )
+        stage0Path = _x_( data, '?/base.FILE_PATH' )
         thisAtom = _x_( data, '?/hbs.THIS_ATOM' )
         parentAtom = _x_( data, '?/hbs.PARENT_ATOM' )
         originAtom = parentAtom
         originEvent = data
+
+        investigation.reportData( 'investigating file %s found [here](/explore?atid=%s)' % ( stage0Path, normalAtom( thisAtom ) ) )
+
+        if stage0Path is not None:
+            if investigation.dupeCheck_preInv( stage0Path, ttl = 60 * 60 * 24 * 7, isPerSensor = True ): return
 
         # Before we investigate we'll try to get some cached information
         investigation.task( 'get the file creations for the next minute', 
@@ -105,7 +111,7 @@ class TestHunter ( Hunter ):
 
             # Let's see on how many boxes we've seen this path before.
             parentObjInfo = self.getObjectInfo( parentPath, 'FILE_PATH' )
-            if parentObjInfo is None:
+            if parentObjInfo is None or 0 == len( parentObjInfo ):
                 investigation.reportData( 'could not find information on path *%s*' % parentPath )
 
             nLocs = len( parentObjInfo[ 'locs' ] )
@@ -113,9 +119,9 @@ class TestHunter ( Hunter ):
                 investigation.reportData( 'path seems to be well known, we probably found the origin' )
                 break
             else:
-                investigation.reportData( 'path *%s* observed on %s hosts' % nLocs )
+                investigation.reportData( 'path *%s* observed on %s hosts' % ( parentPath, nLocs ) )
         
-        investigation.reportData( '[origin](/explorer_view?id=%s) of bad behavior as far as we can tell' % normalAtom( originAtom ) )
+        investigation.reportData( '[origin](/explore?atid=%s) of bad behavior as far as we can tell' % normalAtom( originAtom ) )
 
         originPid = _x_( originEvent, '?/base.PROCESS_ID' )
 
@@ -128,7 +134,10 @@ class TestHunter ( Hunter ):
         lastDocs = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.NEW_DOCUMENT' )
         lastDocs = [ ( _x_( doc, '?/base.FILE_PATH' ),
                        _x_( doc, '?/base.HASH' ) ) for doc in lastDocs ]
-        mdDocs = self.listToMdTable( ( 'File', 'Hash' ), lastDocs )
+        if 0 != len( lastDocs ):
+            mdDocs = self.listToMdTable( ( 'File', 'Hash' ), lastDocs )
+        else:
+            mdDocs = ''
         investigation.reportData( 'found %s documents created in the last minute\n\n%s' % ( len( lastDocs ), mdDocs ) )
 
         # Let's see if any of the documents are known bad.
@@ -147,7 +156,10 @@ class TestHunter ( Hunter ):
         lastCode = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.CODE_IDENTITY' )
         lastCode = [ ( _x_( code, '?/base.FILE_PATH' ),
                        _x_( code, '?/base.HASH' ) ) for code in lastCode ]
-        mdCode = self.listToMdTable( ( 'File', 'Hash' ), lastCode )
+        if 0 != len( lastCode ):
+            mdCode = self.listToMdTable( ( 'File', 'Hash' ), lastCode )
+        else:
+            mdCode = ''
         investigation.reportData( 'found %s new pieces of code in the last minute\n\n%s' % ( len( lastCode ), mdCode ) )
 
         isBadCodeFound = False
@@ -165,7 +177,10 @@ class TestHunter ( Hunter ):
         lastDns = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.DNS_REQUEST' )
         lastDns = [ _x_( dns, '?/base.DOMAIN_NAME' ) for dns in lastDns ]
         lastDns = [ x for x in lastDns if not self.isAlexaDomain( x ) ]
-        mdDns = self.listToMdTable( ( 'Domain', ), lastDns )
+        if 0 != len( lastDns ):
+            mdDns = self.listToMdTable( ( 'Domain', ), lastDns )
+        else:
+            mdDns = ''
         investigation.reportData( 'found %s DNS queries (minus Alexa top million) in the last minute\n\n%s' % ( len( lastDns ), mdDns ) )
 
 
@@ -174,7 +189,10 @@ class TestHunter ( Hunter ):
         lastConn = [ ( _x_( conn, '?/base.PROCESS_ID' ),
                        '%s:%s' % ( _x_( conn, '?/base.SOURCE/base.IP_ADDRESS' ), _x_( conn, '?/base.SOURCE/base.PORT' ) ),
                        '%s:%s' % ( _x_( conn, '?/base.DESTINATION/base.IP_ADDRESS' ), _x_( conn, '?/base.DESTINATION/base.PORT' ) ) ) for conn in lastConn ]
-        mdConn = self.listToMdTable( ( 'PID', 'Source', 'Dest' ), lastConn )
+        if 0 != len( lastConn ):
+            mdConn = self.listToMdTable( ( 'PID', 'Source', 'Dest' ), lastConn )
+        else:
+            mdConn = ''
         investigation.reportData( 'found %s TCP connections in the last minute\n\n%s' % ( len( lastConn ), mdConn ) )
 
 
@@ -207,6 +225,8 @@ class TestHunter ( Hunter ):
         else:
             investigation.reportData( 'never received confirmation of mem map from sensor' )
 
+        if stage0Path is not None:
+            if investigation.dupeCheck_postInv( stage0Path, isPerSensor = True ): return
 
         # Concluding the investigation
         investigation.conclude( 'unsure on the nature of this event but lots of context was gathered',

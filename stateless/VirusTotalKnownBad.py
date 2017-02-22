@@ -70,4 +70,4 @@ class VirusTotalKnownBad ( StatelessActor ):
         if report is not None:
             detects.add( 70,
                          'bad hash from virus total',
-                         { 'report' : report, 'hash' : h } )
+                         { 'report' : report, 'hash' : h, 'event' : event } )

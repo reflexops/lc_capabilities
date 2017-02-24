@@ -30,7 +30,7 @@ LC_DETECTION_MTD_START
     "scaling_factor" : 1000,
     "n_concurrent" : 5,
     "usage" : {
-        "qpm" : "max number of queries per minute to make"
+        
     }
 }
 LC_DETECTION_MTD_END
@@ -40,23 +40,31 @@ LC_DETECTION_MTD_END
 from beach.actor import Actor
 ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
 StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
-RingCache = Actor.importLib( 'utils/hcp_helpers', 'RingCache' )
 
 class VirusTotalKnownBad ( StatelessActor ):
     def init( self, parameters, resources ):
         super( VirusTotalKnownBad, self ).init( parameters, resources )
+
+        self.original_process = self.handle( 'process', self.delayProcess )
 
         self.vtReport = self.getActorHandle( 'analytics/virustotal' )
 
         # Minimum number of AVs saying it's a hit before we flag it
         self.threshold = parameters.get( 'min_av', 1 )
 
+    # This actor can be very asynchronous depending on the VT API limits.
+    # So to avoid the analytics thinking we've timed out, we will make
+    # the lookups asynchronous.
+    def delayProcess( self, msg ):
+        self.delay( 0, self.original_process, msg )
+        return ( True, )
+
     def process( self, detects, msg ):
         routing, event, mtd = msg.data
         
         report = None
         for h in mtd[ 'obj' ].get( ObjectTypes.FILE_HASH, [] ):
-            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 30 ) )
+            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 12 ) )
             if vtReport.isSuccess:
                 report = {}
                 info = vtReport.data[ 'report' ]

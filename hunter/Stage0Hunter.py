@@ -217,7 +217,7 @@ class Stage0Hunter ( Hunter ):
                                                     hex( _x_( r, 'base.MEMORY_SIZE' ) ),
                                                     MemoryType.lookup[ _x_( r, 'base.MEMORY_TYPE' ) ],
                                                     MemoryAccess.lookup[ _x_( r, 'base.MEMORY_ACCESS' ) ] ) for r in suspiciousRegions ] )
-                investigation.reportData( 'suspicious memory regions:\n%s' % mdRegions )
+                investigation.reportData( 'suspicious memory regions:\n\n%s' % mdRegions )
             else:
                 investigation.reportData( 'no suspicious memory region found (%s total regions)' % len( memMap ) )
         elif memMapResp.wasReceived:

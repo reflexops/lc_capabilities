@@ -56,11 +56,11 @@ class VirusTotalHunter ( Hunter ):
         data = detect[ 'detect' ]
         thisAtom = _x_( data, 'event/?/hbs.THIS_ATOM' )
         parentAtom = _x_( data, 'event/?/hbs.PARENT_ATOM' )
-        originAtom = normalAtom( parentAtom )
+        originAtom = normalAtom( parentAtom ) if parentAtom is not None else None
         vtReports = data[ 'report' ]
         vtHash = data[ 'hash' ]
 
-        investigation.reportData( 'investigating file hash %s found [here](/explore?atid=%s)' % ( vtHash, normalAtom( thisAtom ) ) )
+        investigation.reportData( 'investigating file hash %s\n event is [here](/explore?atid=%s)\n VT link is [here](https://www.virustotal.com/en/file/%s/analysis/)' % ( vtHash, normalAtom( thisAtom ), vtHash ) )
 
         # If this is a duplicate investigation abort.
         if investigation.dupeCheck_preInv( vtHash, ttl = 60 * 60 * 24, isPerSensor = False ): return
@@ -88,7 +88,11 @@ class VirusTotalHunter ( Hunter ):
 
         # Wait for the history to get dumped
         if histResp:
-            histResp.wait( 30 )
+            if not histResp.wait( 30 ):
+                if histResp.wasReceived:
+                    investigation.reportData( 'history dump was received by sensor but did not complete' )
+                else:
+                    investigation.reportData( 'history dump was not received by sensor, sensor offline?' )
             self.sleep( 5 )
 
         fileCreates = self.getLastNSecondsOfEventsFrom( 300, source, 'notification.FILE_CREATE' )
@@ -113,7 +117,7 @@ class VirusTotalHunter ( Hunter ):
                                             InvestigationConclusion.NO_ACTION_TAKEN )
                     return
 
-        investigation.reportData( 'Files created in the past 5 minutes\n' +
+        investigation.reportData( 'Files created in the past 5 minutes\n\n' +
                 self.listToMdTable( [ 'File Path' ], 
                                     [ ( _x_( x, '?/base.FILE_PATH' ), ) for x in fileCreates ] ) )
 

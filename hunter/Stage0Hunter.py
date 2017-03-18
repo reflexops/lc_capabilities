@@ -43,7 +43,11 @@ MemoryType = Actor.importLib( 'utils/hcp_helpers', 'MemoryType' )
 normalAtom = Actor.importLib( 'utils/hcp_helpers', 'normalAtom' )
 
 class Stage0Hunter ( Hunter ):
-    detects = ( 'WinSuspExecLoc', 'WinSuspExecName' )
+    detects = ( 'WinSuspExecLoc', 
+                'WinSuspExecName', 
+                'MacSuspExecLoc',
+                'windows_scripted_payload', 'windows_scripted_payload_drop',
+                'windows_productivity_doc_exploit', 'windows_local_doc_exploit', )
 
     def init( self, parameters, resources ):
         super( Stage0Hunter, self ).init( parameters )

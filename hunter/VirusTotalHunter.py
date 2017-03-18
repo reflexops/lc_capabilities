@@ -59,8 +59,16 @@ class VirusTotalHunter ( Hunter ):
         originAtom = normalAtom( parentAtom ) if parentAtom is not None else None
         vtReports = data[ 'report' ]
         vtHash = data[ 'hash' ]
+        filePath = _x_( data, 'event/?/base.FILE_PATH' )
 
-        investigation.reportData( 'investigating file hash %s\n event is [here](/explore?atid=%s)\n VT link is [here](https://www.virustotal.com/en/file/%s/analysis/)' % ( vtHash, normalAtom( thisAtom ), vtHash ) )
+        summary = [ 'investigating file hash %s' % vtHash,
+                    'event is [here](/explore?atid=%s)' % normalAtom( thisAtom ),
+                    'VT link is [here](https://www.virustotal.com/en/file/%s/analysis/)' % vtHash ]
+
+        if filePath is not None:
+            summary.append( 'original file path: %s' % filePath )
+
+        investigation.reportData( "\n\n".join( summary ) )
 
         # If this is a duplicate investigation abort.
         if investigation.dupeCheck_preInv( vtHash, ttl = 60 * 60 * 24, isPerSensor = False ): return

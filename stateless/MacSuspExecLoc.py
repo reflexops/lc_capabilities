@@ -42,8 +42,9 @@ _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 class MacSuspExecLoc ( StatelessActor ):
     def init( self, parameters, resources ):
         super( MacSuspExecLoc, self ).init( parameters, resources )
-        self.slocs = { 'shared' : re.compile( r'/Users/Shared/.*' ),
-                       'hidden_dir' : re.compile( r'.*/\..+/.*' ) }
+        self.slocs = { 'shared' : re.compile( r'/Users/Shared/.*' )
+                       # 'hidden_dir' : re.compile( r'.*/\..+/.*' )
+                       }
 
     def process( self, detects, msg ):
         routing, event, mtd = msg.data

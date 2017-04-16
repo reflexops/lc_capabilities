@@ -63,7 +63,8 @@ class Stage0Hunter ( Hunter ):
         originAtom = parentAtom
         originEvent = data
 
-        investigation.reportData( 'investigating file %s found [here](/explore?atid=%s)' % ( stage0Path, normalAtom( thisAtom ) ) )
+        investigation.reportData( 'investigating file %s found here: %s' % ( stage0Path, self.exploreLink( thisAtom ) ) )
+    
 
         if stage0Path is not None:
             if investigation.dupeCheck_preInv( stage0Path, ttl = 60 * 60 * 24 * 7, isPerSensor = True ): return
@@ -125,7 +126,7 @@ class Stage0Hunter ( Hunter ):
             else:
                 investigation.reportData( 'path *%s* observed on %s hosts' % ( parentPath, nLocs ) )
         
-        investigation.reportData( '[origin](/explore?atid=%s) of bad behavior as far as we can tell' % normalAtom( originAtom ) )
+        investigation.reportData( 'origin (%s) of bad behavior as far as we can tell' % self.exploreLink( thisAtom ) )
 
         originPid = _x_( originEvent, '?/base.PROCESS_ID' )
 

@@ -63,7 +63,7 @@ class Stage0Hunter ( Hunter ):
         originAtom = parentAtom
         originEvent = data
 
-        investigation.reportData( 'investigating file %s found here: %s' % ( stage0Path, self.exploreLink( thisAtom ) ) )
+        investigation.reportData( 'investigating file %s' % ( stage0Path, ), data = { "explore" : self.exploreLink( thisAtom ) } )
     
 
         if stage0Path is not None:
@@ -137,13 +137,9 @@ class Stage0Hunter ( Hunter ):
 
         # Let's get the list of documents of interest (also cached) created in the last minute.
         lastDocs = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.NEW_DOCUMENT' )
-        lastDocs = [ ( _x_( doc, '?/base.FILE_PATH' ),
-                       _x_( doc, '?/base.HASH' ) ) for doc in lastDocs ]
-        if 0 != len( lastDocs ):
-            mdDocs = self.listToMdTable( ( 'File', 'Hash' ), lastDocs )
-        else:
-            mdDocs = ''
-        investigation.reportData( 'found %s documents created in the last minute\n\n%s' % ( len( lastDocs ), mdDocs ) )
+        lastDocs = [ { "file" : _x_( doc, '?/base.FILE_PATH' ),
+                       "hash" : _x_( doc, '?/base.HASH' ) } for doc in lastDocs ]
+        investigation.reportData( 'found %s documents created in the last minute' % ( len( lastDocs ), ), data = lastDocs )
 
         # Let's see if any of the documents are known bad.
         isBadDocFound = False
@@ -151,7 +147,7 @@ class Stage0Hunter ( Hunter ):
             vtReport, mdVtReport = self.getVTReport( docHash )
             if vtReport is not None and 0 < len( vtReport ):
                 isBadDocFound = True
-                investigation.reportData( 'the document with hash *%s* has the following virus total hits:\n%s' % mdVtReport )
+                investigation.reportData( 'the document with hash *%s* has the following virus total hits:', data = vtReport )
 
         if not isBadDocFound:
             investigation.reportData( 'no recent file had hits on virus total' )
@@ -159,20 +155,16 @@ class Stage0Hunter ( Hunter ):
 
         # Check for new code loading
         lastCode = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.CODE_IDENTITY' )
-        lastCode = [ ( _x_( code, '?/base.FILE_PATH' ),
-                       _x_( code, '?/base.HASH' ) ) for code in lastCode ]
-        if 0 != len( lastCode ):
-            mdCode = self.listToMdTable( ( 'File', 'Hash' ), lastCode )
-        else:
-            mdCode = ''
-        investigation.reportData( 'found %s new pieces of code in the last minute\n\n%s' % ( len( lastCode ), mdCode ) )
+        lastCode = [ { "file" : _x_( code, '?/base.FILE_PATH' ),
+                       "hash" : _x_( code, '?/base.HASH' ) } for code in lastCode ]
+        investigation.reportData( 'found %s new pieces of code in the last minute' % ( len( lastCode ), ), data = lastCode )
 
         isBadCodeFound = False
         for codePath, codeHash in lastCode:
             vtReport, mdVtReport = self.getVTReport( codeHash )
             if vtReport is not None and 0 < len( vtReport ):
                 isBadCodeFound = True
-                investigation.reportData( 'the code with hash *%s* has the following virus total hits:\n%s' % mdVtReport )
+                investigation.reportData( 'the code with hash *%s* has the following virus total hits:', data = vtReport )
 
         if not isBadCodeFound:
             investigation.reportData( 'no recent code had hits on virus total' )
@@ -182,23 +174,15 @@ class Stage0Hunter ( Hunter ):
         lastDns = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.DNS_REQUEST' )
         lastDns = [ _x_( dns, '?/base.DOMAIN_NAME' ) for dns in lastDns ]
         lastDns = [ x for x in lastDns if not self.isAlexaDomain( x ) ]
-        if 0 != len( lastDns ):
-            mdDns = self.listToMdTable( ( 'Domain', ), lastDns )
-        else:
-            mdDns = ''
-        investigation.reportData( 'found %s DNS queries (minus Alexa top million) in the last minute\n\n%s' % ( len( lastDns ), mdDns ) )
+        investigation.reportData( 'found %s DNS queries (minus Alexa top million) in the last minute' % ( len( lastDns ), ), data = lastDns )
 
 
         # Check the network activity
         lastConn = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.NEW_TCP4_CONNECTION' )
-        lastConn = [ ( _x_( conn, '?/base.PROCESS_ID' ),
-                       '%s:%s' % ( _x_( conn, '?/base.SOURCE/base.IP_ADDRESS' ), _x_( conn, '?/base.SOURCE/base.PORT' ) ),
-                       '%s:%s' % ( _x_( conn, '?/base.DESTINATION/base.IP_ADDRESS' ), _x_( conn, '?/base.DESTINATION/base.PORT' ) ) ) for conn in lastConn ]
-        if 0 != len( lastConn ):
-            mdConn = self.listToMdTable( ( 'PID', 'Source', 'Dest' ), lastConn )
-        else:
-            mdConn = ''
-        investigation.reportData( 'found %s TCP connections in the last minute\n\n%s' % ( len( lastConn ), mdConn ) )
+        lastConn = [ { "pid" : _x_( conn, '?/base.PROCESS_ID' ),
+                       "source" : '%s:%s' % ( _x_( conn, '?/base.SOURCE/base.IP_ADDRESS' ), _x_( conn, '?/base.SOURCE/base.PORT' ) ),
+                       "dest" : '%s:%s' % ( _x_( conn, '?/base.DESTINATION/base.IP_ADDRESS' ), _x_( conn, '?/base.DESTINATION/base.PORT' ) ) } for conn in lastConn ]
+        investigation.reportData( 'found %s TCP connections in the last minute' % ( len( lastConn ), ), data = lastConn )
 
 
         # Let's analyze the memory map to see if we can find suspicious memory regions that we could fetch.
@@ -217,12 +201,11 @@ class Stage0Hunter ( Hunter ):
                                                            MemoryAccess.EXECUTE_WRITE ):
                         suspiciousRegions.append( region )
             if 0 < len( suspiciousRegions ):
-                mdRegions = self.listToMdTable( ( 'Base Address', 'Size', 'Type', 'Access' ), 
-                                                [ ( hex( _x_( r, 'base.BASE_ADDRESS' ) ),
-                                                    hex( _x_( r, 'base.MEMORY_SIZE' ) ),
-                                                    MemoryType.lookup[ _x_( r, 'base.MEMORY_TYPE' ) ],
-                                                    MemoryAccess.lookup[ _x_( r, 'base.MEMORY_ACCESS' ) ] ) for r in suspiciousRegions ] )
-                investigation.reportData( 'suspicious memory regions:\n\n%s' % mdRegions )
+                suspiciousRegions = [ { "base" : hex( _x_( r, 'base.BASE_ADDRESS' ) ),
+                                        "size" : hex( _x_( r, 'base.MEMORY_SIZE' ) ),
+                                        "type" : MemoryType.lookup[ _x_( r, 'base.MEMORY_TYPE' ) ],
+                                        "access" : MemoryAccess.lookup[ _x_( r, 'base.MEMORY_ACCESS' ) ] } for r in suspiciousRegions ]
+                investigation.reportData( 'suspicious memory regions:', data = suspiciousRegions )
             else:
                 investigation.reportData( 'no suspicious memory region found (%s total regions)' % len( memMap ) )
         elif memMapResp.wasReceived:

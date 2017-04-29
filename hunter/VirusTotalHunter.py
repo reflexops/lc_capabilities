@@ -61,14 +61,14 @@ class VirusTotalHunter ( Hunter ):
         vtHash = data[ 'hash' ]
         filePath = _x_( data, 'event/?/base.FILE_PATH' )
 
-        summary = [ 'investigating file hash %s' % vtHash,
-                    'event is [here](/explore?atid=%s)' % normalAtom( thisAtom ),
-                    'VT link is [here](https://www.virustotal.com/en/file/%s/analysis/)' % vtHash ]
+        summaryData =  { "hash" : vtHash, 
+                         "explore" : self.exploreLink( thisAtom ),
+                         "vt" : 'https://www.virustotal.com/en/file/%s/analysis/' % vtHash }
 
         if filePath is not None:
-            summary.append( 'original file path: %s' % filePath )
+            summaryData[ 'original_file' ]  = 'original file path: %s' % filePath
 
-        investigation.reportData( "\n\n".join( summary ) )
+        investigation.reportData( 'investigating file hash %s' % vtHash, data = summaryData )
 
         # If this is a duplicate investigation abort.
         if investigation.dupeCheck_preInv( vtHash, ttl = 60 * 60 * 24, isPerSensor = False ): return
@@ -125,9 +125,7 @@ class VirusTotalHunter ( Hunter ):
                                             InvestigationConclusion.NO_ACTION_TAKEN )
                     return
 
-        investigation.reportData( 'Files created in the past 5 minutes\n\n' +
-                self.listToMdTable( [ 'File Path' ], 
-                                    [ ( _x_( x, '?/base.FILE_PATH' ), ) for x in fileCreates ] ) )
+        investigation.reportData( 'Files created in the past 5 minutes', data = [ { "file" : _x_( x, '?/base.FILE_PATH' ) } for x in fileCreates ] )
 
         if investigation.dupeCheck_postInv( vtHash, isPerSensor = False ): return
 

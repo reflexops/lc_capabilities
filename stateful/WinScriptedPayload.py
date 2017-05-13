@@ -41,8 +41,8 @@ class WinScriptedPayload ( StatefulActor ):
     def initMachines( self, parameters ):
         self.shardingKey = 'agentid'
 
-        scriptEngines = re.compile( r'.*(/|\\)((wscript))\.exe', re.IGNORECASE )
-        sensitiveApps = re.compile( r'.*(/|\\)((((rundll32)|(explorer)|(iexplore)|(svchost)|(calc)|(notepad))\.exe)|((?<!\.exe)$))', re.IGNORECASE )
+        scriptEngines = re.compile( r'.*(/|\\)(((w|c)script))\.exe', re.IGNORECASE )
+        sensitiveApps = re.compile( r'.*(/|\\)((((rundll32)|(explorer)|(iexplore)|(svchost)|(icacls)|(bcdedit)|(wbadmin)|(attrib)|(calc)|(notepad))\.exe)|((?<!\.exe)$))', re.IGNORECASE )
         suspiciousDocs = re.compile( r'.*\.(exe|bat|vbs|js|hta|scr)', re.IGNORECASE )
         
         scriptedPayload = ProcessDescendant( name = 'windows_scripted_payload',

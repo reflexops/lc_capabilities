@@ -57,6 +57,7 @@ class Stage0Hunter ( Hunter ):
         inv_id = detect[ 'detect_id' ]
         data = detect[ 'detect' ]
         pid = _x_( data, '?/base.PROCESS_ID' )
+        originTs = _x_( data, '?/base.TIMESTAMP' )
         stage0Path = _x_( data, '?/base.FILE_PATH' )
         thisAtom = _x_( data, '?/hbs.THIS_ATOM' )
         parentAtom = _x_( data, '?/hbs.PARENT_ATOM' )
@@ -94,6 +95,9 @@ class Stage0Hunter ( Hunter ):
         histResp = investigation.task( 'fetching history', 
                                        source, 
                                        ( 'history_dump', ) )
+        getFileResp = investigation.task( 'getting the stage0 file',
+                                          source,
+                                          ( 'file_get', stage0Path ) )
 
         # Wait for the history to be flushed
         histResp.wait( 10 )
@@ -101,11 +105,11 @@ class Stage0Hunter ( Hunter ):
         # First, let's crawl up the parent events to see if we know
         # what each one is, we're looking for the root event that
         # is well known.
+        investigation.reportData( 'looking at the parents of the process until we find a well known process.' )
         for parentEvent in self.crawlUpParentTree( None, rootAtom = parentAtom ):
             originAtom = _x_( parentEvent, '?/hbs.THIS_ATOM' )
             originEvent = parentEvent
             parentEventType = parentEvent.keys()[ 0 ]
-            investigation.reportData( 'the parent event is *%s*' % ( parentEventType, ), parentEvent )
 
             # This is likely going to be a process, but we're going to try to be even
             # more generic and just look at the path to see if we know it.
@@ -117,73 +121,19 @@ class Stage0Hunter ( Hunter ):
             # Let's see on how many boxes we've seen this path before.
             parentObjInfo = self.getObjectInfo( parentPath, 'FILE_PATH' )
             if parentObjInfo is None or 0 == len( parentObjInfo ):
-                investigation.reportData( 'could not find information on path *%s*' % parentPath )
+                investigation.reportData( 'could not find information on path %s' % parentPath )
 
-            nLocs = len( parentObjInfo[ 'locs' ] )
-            if nLocs > 10:
-                investigation.reportData( 'path seems to be well known, we probably found the origin' )
+            nLocs = parentObjInfo[ 'locs' ][ parentObjInfo[ 'id' ] ]
+            if nLocs > 5:
                 break
-            else:
-                investigation.reportData( 'path *%s* observed on %s hosts' % ( parentPath, nLocs ) )
         
-        investigation.reportData( 'origin (%s) of bad behavior as far as we can tell' % self.exploreLink( thisAtom ) )
+        investigation.reportData( 'origin (%s) of bad behavior as far as we can tell: %s' % ( self.exploreLink( originAtom ), parentPath ) )
 
         originPid = _x_( originEvent, '?/base.PROCESS_ID' )
 
         memMapResp = investigation.task( 'looking for possible malicious code in the origin process', 
                                          source, 
                                          ( 'mem_map', '--pid', originPid ) )
-
-
-        # Let's get the list of documents of interest (also cached) created in the last minute.
-        lastDocs = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.NEW_DOCUMENT' )
-        lastDocs = [ { "file" : _x_( doc, '?/base.FILE_PATH' ),
-                       "hash" : _x_( doc, '?/base.HASH' ) } for doc in lastDocs ]
-        investigation.reportData( 'found %s documents created in the last minute' % ( len( lastDocs ), ), data = lastDocs )
-
-        # Let's see if any of the documents are known bad.
-        isBadDocFound = False
-        for docPath, docHash in lastDocs:
-            vtReport, mdVtReport = self.getVTReport( docHash )
-            if vtReport is not None and 0 < len( vtReport ):
-                isBadDocFound = True
-                investigation.reportData( 'the document with hash *%s* has the following virus total hits:', data = vtReport )
-
-        if not isBadDocFound:
-            investigation.reportData( 'no recent file had hits on virus total' )
-
-
-        # Check for new code loading
-        lastCode = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.CODE_IDENTITY' )
-        lastCode = [ { "file" : _x_( code, '?/base.FILE_PATH' ),
-                       "hash" : _x_( code, '?/base.HASH' ) } for code in lastCode ]
-        investigation.reportData( 'found %s new pieces of code in the last minute' % ( len( lastCode ), ), data = lastCode )
-
-        isBadCodeFound = False
-        for codePath, codeHash in lastCode:
-            vtReport, mdVtReport = self.getVTReport( codeHash )
-            if vtReport is not None and 0 < len( vtReport ):
-                isBadCodeFound = True
-                investigation.reportData( 'the code with hash *%s* has the following virus total hits:', data = vtReport )
-
-        if not isBadCodeFound:
-            investigation.reportData( 'no recent code had hits on virus total' )
-
-
-        # Check for rare domains being queried
-        lastDns = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.DNS_REQUEST' )
-        lastDns = [ _x_( dns, '?/base.DOMAIN_NAME' ) for dns in lastDns ]
-        lastDns = [ x for x in lastDns if not self.isAlexaDomain( x ) ]
-        investigation.reportData( 'found %s DNS queries (minus Alexa top million) in the last minute' % ( len( lastDns ), ), data = lastDns )
-
-
-        # Check the network activity
-        lastConn = self.getLastNSecondsOfEventsFrom( 60, source, 'notification.NEW_TCP4_CONNECTION' )
-        lastConn = [ { "pid" : _x_( conn, '?/base.PROCESS_ID' ),
-                       "source" : '%s:%s' % ( _x_( conn, '?/base.SOURCE/base.IP_ADDRESS' ), _x_( conn, '?/base.SOURCE/base.PORT' ) ),
-                       "dest" : '%s:%s' % ( _x_( conn, '?/base.DESTINATION/base.IP_ADDRESS' ), _x_( conn, '?/base.DESTINATION/base.PORT' ) ) } for conn in lastConn ]
-        investigation.reportData( 'found %s TCP connections in the last minute' % ( len( lastConn ), ), data = lastConn )
-
 
         # Let's analyze the memory map to see if we can find suspicious memory regions that we could fetch.
         if memMapResp.wait( 120 ):
@@ -212,6 +162,75 @@ class Stage0Hunter ( Hunter ):
             investigation.reportData( 'mem map command received by sensor but no response' )
         else:
             investigation.reportData( 'never received confirmation of mem map from sensor' )
+
+        # Let's see if we managed to get the file from the sensor.
+        if getFileResp.wait( 120 ):
+            getFile = getFileResp.responses.pop()
+            thisAtom = _x_( getFile, '?/hbs.THIS_ATOM' )
+            investigation.reportData( 'retrieved file %s' % ( stage0Path, ), data = { "explore" : self.exploreLink( thisAtom ) } )
+        elif getFileResp.wasReceived:
+            investigation.reportData( "get file couldn't reach sensor" )
+        else:
+            investigation.reportData( 'never received the file' )
+
+        # Let's get the list of documents of interest (also cached) created in the last minute.
+        lastDocs = self.getEventsNSecondsAround( 60, originTs / 1000, source, 'notification.NEW_DOCUMENT' )
+        lastDocs = [ { "file" : _x_( doc, '?/base.FILE_PATH' ),
+                       "hash" : _x_( doc, '?/base.HASH' ) } for doc in lastDocs ]
+        investigation.reportData( 'found %s documents created in the last minute' % ( len( lastDocs ), ), data = lastDocs )
+
+        # Let's see if any of the documents are known bad.
+        isBadDocFound = False
+        for docPath, docHash in lastDocs:
+            vtReport, mdVtReport = self.getVTReport( docHash )
+            if vtReport is not None and 0 < len( vtReport ):
+                isBadDocFound = True
+                investigation.reportData( 'the document with hash *%s* has the following virus total hits:', data = vtReport )
+
+        if not isBadDocFound:
+            investigation.reportData( 'no recent file had hits on virus total' )
+
+
+        # Check for new code loading
+        lastCode = self.getEventsNSecondsAround( 60, originTs / 1000, source, 'notification.CODE_IDENTITY' )
+        lastCode = [ { "file" : _x_( code, '?/base.FILE_PATH' ),
+                       "hash" : _x_( code, '?/base.HASH' ) } for code in lastCode ]
+        investigation.reportData( 'found %s new pieces of code in the last minute' % ( len( lastCode ), ), data = lastCode )
+
+        isBadCodeFound = False
+        for codePath, codeHash in lastCode:
+            vtReport, mdVtReport = self.getVTReport( codeHash )
+            if vtReport is not None and 0 < len( vtReport ):
+                isBadCodeFound = True
+                investigation.reportData( 'the code with hash *%s* has the following virus total hits:', data = vtReport )
+
+        if not isBadCodeFound:
+            investigation.reportData( 'no recent code had hits on virus total' )
+
+
+        # Check for rare domains being queried
+        lastDns = self.getEventsNSecondsAround( 60, originTs / 1000, source, 'notification.DNS_REQUEST' )
+        lastDns = [ _x_( dns, '?/base.DOMAIN_NAME' ) for dns in lastDns ]
+        totalDns = len( lastDns )
+        lastDns = [ x for x in lastDns if not self.isAlexaDomain( x ) ]
+        investigation.reportData( 'found %s DNS queries (%s queries, minus Alexa top million) in the last minute' % ( len( lastDns ), totalDns ), data = lastDns )
+
+
+        # Check the network activity
+        lastConn = self.getEventsNSecondsAround( 60, originTs / 1000, source, 'notification.NEW_TCP4_CONNECTION' )
+        lastConn = [ { "pid" : _x_( conn, '?/base.PROCESS_ID' ),
+                       "source" : '%s:%s' % ( _x_( conn, '?/base.SOURCE/base.IP_ADDRESS' ), _x_( conn, '?/base.SOURCE/base.PORT' ) ),
+                       "dest" : '%s:%s' % ( _x_( conn, '?/base.DESTINATION/base.IP_ADDRESS' ), _x_( conn, '?/base.DESTINATION/base.PORT' ) ) } for conn in lastConn ]
+        investigation.reportData( 'found %s TCP connections in the last minute' % ( len( lastConn ), ), data = lastConn )
+
+        childrenEvents = self.getChildrenAtoms( originAtom )
+        childrenFileCreate = []
+        if childrenEvents is not None:
+            for event in childrenEvents:
+                if event.keys()[ 0 ] in ( 'notification.FILE_CREATE', ):
+                    childrenFileCreate.append( event )
+            if 0 != len( childrenFileCreate ):
+                investigation.reportData( 'events of interest from the original process', data = { "events" : childrenFileCreate } )
 
         if stage0Path is not None:
             if investigation.dupeCheck_postInv( stage0Path, isPerSensor = True ): return

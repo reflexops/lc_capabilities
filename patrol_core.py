@@ -4,7 +4,7 @@
 LC_PATROL_MTD_START
 {
     "description" : "Collection of all core LimaCharlie.io detections.",
-    "stateless" : "VirusTotalKnownBad, WinSuspExecLoc, WinSuspExecName, MacSuspExecLoc, MalwareDomainsIoc",
+    "stateless" : "VirusTotalKnownBad, MalwareDomainsIoc, WinSuspExecLoc, WinSuspExecName, MacSuspExecLoc, ShadowVolumeTampering, AclTampering",
     "stateful" : "WinScriptedPayload, WinDocumentExploit, MacDocumentExploit",
     "hunter" : "VirusTotalHunter, Stage0Hunter",
     "author" : "maximelb@google.com",
@@ -56,7 +56,7 @@ Patrol( 'VirusTotalKnownBad',
 #    reported as a detection.
 #######################################
 Patrol( 'MalwareDomainsIoc',
-        initialInstances = 2,
+        initialInstances = 1,
         maxInstances = None,
         relaunchOnFailure = True,
         onFailureCall = None,
@@ -157,6 +157,28 @@ Patrol( 'ShadowVolumeTampering',
             'strategy' : 'repulsion' } )
 
 #######################################
+# stateless/AclTampering
+# This actor looks for execution from
+# executables with suspicious names that
+# try to hide the fact the files are
+# executables.
+#######################################
+Patrol( 'AclTampering',
+        initialInstances = 1,
+        maxInstances = None,
+        relaunchOnFailure = True,
+        onFailureCall = None,
+        scalingFactor = 1000,
+        actorArgs = ( 'stateless/AclTampering',
+                      [ 'analytics/stateless/windows/notification.NEW_PROCESS/acltampering/1.0' ] ),
+        actorKwArgs = {
+            'parameters' : {},
+            'secretIdent' : 'analysis/01e9a19d-78e1-4c37-9a6e-37cb592e3897',
+            'trustedIdents' : [ 'analysis/01e9a19d-78e1-4c37-9a6e-37cb592e3897' ],
+            'n_concurrent' : 5,
+            'strategy' : 'repulsion' } )
+
+#######################################
 # stateful/WinScriptedPayload
 # This actor looks for a payload executing
 # under a scripting engine.
@@ -219,30 +241,12 @@ Patrol( 'MacDocumentExploit',
             'strategy' : 'repulsion' } )
 
 #######################################
-# hunter/VirusTotalHunter
-# This hunter investigates VirusTotal hits.
-#######################################
-Patrol( 'VirusTotalHunter',
-        initialInstances = 2,
-        maxInstances = None,
-        relaunchOnFailure = True,
-        onFailureCall = None,
-        scalingFactor = 10000,
-        actorArgs = ( 'hunter/VirusTotalHunter',
-                      'analytics/hunter/virustotalhunter/1.0' ),
-        actorKwArgs = {
-            'parameters' : {},
-            'secretIdent' : 'hunter/8e0f55c0-6593-4747-9d02-a4937fa79517',
-            'trustedIdents' : [ 'analysis/01e9a19d-78e1-4c37-9a6e-37cb592e3897' ],
-            'n_concurrent' : 5 } )
-
-#######################################
 # hunter/Stage0Hunter
 # This hunter investigates potential
 # stage 0.
 #######################################
 Patrol( 'Stage0Hunter',
-        initialInstances = 2,
+        initialInstances = 1,
         maxInstances = None,
         relaunchOnFailure = True,
         onFailureCall = None,

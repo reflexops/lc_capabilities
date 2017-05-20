@@ -18,7 +18,7 @@
 LC_DETECTION_MTD_START
 {
     "type" : "stateless",
-    "description" : "Detects someone tampering with Windows Shadow Volumes.",
+    "description" : "Detects execution from suspicious command lines of Windows.",
     "requirements" : "",
     "feeds" : [ "notification.NEW_PROCESS" ],
     "platform" : "windows",
@@ -34,29 +34,45 @@ LC_DETECTION_MTD_END
 
 from beach.actor import Actor
 import re
+import base64
 ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
 StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
-_x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
+_xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 
-class ShadowVolumeTampering ( StatelessActor ):
+class WinSuspCmdLine ( StatelessActor ):
     def init( self, parameters, resources ):
-        super( ShadowVolumeTampering, self ).init( parameters, resources )
-        self.vssadmin = re.compile( r'.*vssadmin\.exe', re.IGNORECASE )
-        self.vssadminCommands = re.compile( r'.*(delete shadows)|(resize shadowstorage)', re.IGNORECASE )
-        self.wmic = re.compile( r'.*wmic\.exe', re.IGNORECASE )
-        self.wmicCommands = re.compile( r'.*(shadowcopy delete)', re.IGNORECASE )
+        super( WinSuspCmdLine, self ).init( parameters, resources )
+        self.b64re = re.compile( '([A-Za-z0-9+/]{20,})' )
+        self.scmd = { 'rtlo' : re.compile( r'.*\xE2\x80\x8F.*' ),}
 
     def process( self, detects, msg ):
         routing, event, mtd = msg.data
-        
-        filePath = _x_( event, '?/base.FILE_PATH' )
-        cmdLine = _x_( event, '?/base.COMMAND_LINE' )
-        if filePath is not None and cmdLine is not None:
-            if self.vssadmin.match( filePath ) and self.vssadminCommands.match( cmdLine ):
-                    detects.add( 90,
-                                 'tampering of shadow volumes',
-                                 event )
-            elif self.wmic.match( filePath ) and self.wmicCommands.match( cmdLine ):
-                    detects.add( 90,
-                                 'tampering of shadow volumes',
-                                 event )
+        isSusp = False
+
+        for cmdLine in _xm_( event, '?/base.COMMAND_LINE' ):
+            # Look for ^ carrets as they can be used to mask intent
+            if 3 <= cmdLine.count( '^' ):
+                isSusp = True
+                break
+
+            for possibleB64 in self.b64re.findall( cmdLine ):
+                try:
+                    base64.b64decode( token )
+                    isSusp = True
+                    break
+                except:
+                    pass
+
+            if isSusp: break
+
+            for k, v in self.scmd.iteritems():
+                if v.match( cmdLine ):
+                    isSusp = True
+                    break
+
+            if isSusp: break
+
+        if isSusp:
+            detects.add( 70, 
+                         'binary executing with a suspicious command line',
+                         event )

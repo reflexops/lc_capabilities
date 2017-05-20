@@ -3,21 +3,17 @@
 These detections and hunters are designed to be used in conjunction with [LimaCharlie](https://github.com/refractionpoint/limacharlie).
 
 ## How to Use
-To load or unload capabilities see the [LimaCharlie Wiki](https://github.com/refractionPOINT/limacharlie/wiki/Load-Unload-Capabilities).
+To load or unload capabilities, go to the Capabilities menu in the LimaCharlie web ui. Copy the URL of a detection or patrol straight from your 
+browser on GitHub and paste it in the form. Give that capability a name in the form and click Add Capability. 
+That's it, the latest version gets loaded from the repository directly. You can also copy, tweak and load them locally.
 
 ## What to Load
 
-### Major Events From Sensor
-As a basis, to generate detections from "major" events from the sensor, it is recommended to run the patrol_from_sensor.py patrol.
-It only loads capabilities that highlight major events like process hollowing, hidden modules and Yara signature hits.
+### Core Patrol
+Loading the core patrol will bring in all the stateless and stateful detections that should be low risk and false positive.
+These detections are passive in that they do not mitigate any of the threats they detect.
 
-### Other Events
-If you only run OSX, or Windows, you can run the patrol_win or patrol_osx patrols to only activate detections for these platforms.
 
-If your environment is a mix of all platforms, run the patrol_all to activate everything.
-
-The patrol_test is only used for tests for specific capabilities.
-
-## Fork This!
-It's likely you have some ideas for detections or things that need to be custom to your environment. If that's the case just
-fork this repo.
+### Patrol Active Mitigation
+Loading this patrol will bring in active mitigations against some threats. This means it will automatically coordinate with the sensor
+to stop actively, usually by killing specific processes a threat it detects. You should understand that this is potentially more risky.

@@ -121,7 +121,7 @@ class TestHunter ( Hunter ):
 
         memMapResp = investigation.task( 'looking for possible malicious code in the origin process', 
                                          source, 
-                                         ( 'mem_map', originPid ) )
+                                         ( 'mem_map', '--pid', originPid ) )
 
 
         # Let's get the list of documents of interest (also cached) created in the last minute.

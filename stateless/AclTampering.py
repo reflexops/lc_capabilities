@@ -1,4 +1,4 @@
-# Copyright 2015 refractionPOINT
+# Copyright 2017 Google, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 LC_DETECTION_MTD_START
 {
     "type" : "stateless",
-    "description" : "Detects someone tampering with Windows Shadow Volumes.",
+    "description" : "Detects someone tampering ACLs on disk.",
     "requirements" : "",
     "feeds" : [ "notification.NEW_PROCESS" ],
     "platform" : "windows",
@@ -38,13 +38,11 @@ ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
 StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
-class ShadowVolumeTampering ( StatelessActor ):
+class AclTampering ( StatelessActor ):
     def init( self, parameters, resources ):
-        super( ShadowVolumeTampering, self ).init( parameters, resources )
-        self.vssadmin = re.compile( r'.*vssadmin\.exe', re.IGNORECASE )
-        self.vssadminCommands = re.compile( r'.*(delete shadows)|(resize shadowstorage)', re.IGNORECASE )
-        self.wmic = re.compile( r'.*wmic\.exe', re.IGNORECASE )
-        self.wmicCommands = re.compile( r'.*(shadowcopy delete)', re.IGNORECASE )
+        super( AclTampering, self ).init( parameters, resources )
+        self.icacls = re.compile( r'.*icacls\.exe', re.IGNORECASE )
+        self.icaclsCommands = re.compile( r'.*(grant)', re.IGNORECASE )
 
     def process( self, detects, msg ):
         routing, event, mtd = msg.data
@@ -52,11 +50,7 @@ class ShadowVolumeTampering ( StatelessActor ):
         filePath = _x_( event, '?/base.FILE_PATH' )
         cmdLine = _x_( event, '?/base.COMMAND_LINE' )
         if filePath is not None and cmdLine is not None:
-            if self.vssadmin.match( filePath ) and self.vssadminCommands.match( cmdLine ):
+            if self.icacls.match( filePath ) and self.icaclsCommands.match( cmdLine ):
                     detects.add( 90,
-                                 'tampering of shadow volumes',
-                                 event )
-            elif self.wmic.match( filePath ) and self.wmicCommands.match( cmdLine ):
-                    detects.add( 90,
-                                 'tampering of shadow volumes',
+                                 'tampering of ACLs',
                                  event )

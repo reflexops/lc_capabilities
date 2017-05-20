@@ -1,4 +1,4 @@
-# Copyright 2015 refractionPOINT
+# Copyright 2017 Google, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 LC_DETECTION_MTD_START
 {
     "type" : "stateless",
-    "description" : "Detects someone tampering with Windows Shadow Volumes.",
+    "description" : "Detects a privilege elevation on a Nix system.",
     "requirements" : "",
     "feeds" : [ "notification.NEW_PROCESS" ],
-    "platform" : "windows",
+    "platform" : [ "osx", "linux" ],
     "author" : "maximelb@google.com",
     "version" : "1.0",
     "scaling_factor" : 1000,
@@ -38,25 +38,18 @@ ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
 StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
-class ShadowVolumeTampering ( StatelessActor ):
+class NixPrivilegeElevation ( StatelessActor ):
     def init( self, parameters, resources ):
-        super( ShadowVolumeTampering, self ).init( parameters, resources )
-        self.vssadmin = re.compile( r'.*vssadmin\.exe', re.IGNORECASE )
-        self.vssadminCommands = re.compile( r'.*(delete shadows)|(resize shadowstorage)', re.IGNORECASE )
-        self.wmic = re.compile( r'.*wmic\.exe', re.IGNORECASE )
-        self.wmicCommands = re.compile( r'.*(shadowcopy delete)', re.IGNORECASE )
+        super( NixPrivilegeElevation, self ).init( parameters, resources )
 
     def process( self, detects, msg ):
         routing, event, mtd = msg.data
         
-        filePath = _x_( event, '?/base.FILE_PATH' )
-        cmdLine = _x_( event, '?/base.COMMAND_LINE' )
-        if filePath is not None and cmdLine is not None:
-            if self.vssadmin.match( filePath ) and self.vssadminCommands.match( cmdLine ):
-                    detects.add( 90,
-                                 'tampering of shadow volumes',
-                                 event )
-            elif self.wmic.match( filePath ) and self.wmicCommands.match( cmdLine ):
-                    detects.add( 90,
-                                 'tampering of shadow volumes',
-                                 event )
+        procUid = _x_( event, '?/base.USER_ID' )
+        procPath = _x_( event, '?/base.FILE_PATH' )
+        if procUid is not None and 0 == procUid and procPath is not None and not procPath.lower().endswith( 'sudo' ):
+            parentUid = _x_( event, '?/base.PARENT/base.USER_ID' )
+            if parentUid is not None and 0 != parentUid:
+                detects.add( 90, 
+                             'an unprivileged process spawned a high privilege process', 
+                             event )

@@ -122,8 +122,9 @@ class Stage0Hunter ( Hunter ):
             parentObjInfo = self.getObjectInfo( parentPath, 'FILE_PATH' )
             if parentObjInfo is None or 0 == len( parentObjInfo ):
                 investigation.reportData( 'could not find information on path %s' % parentPath )
-
-            nLocs = parentObjInfo[ 'locs' ][ parentObjInfo[ 'id' ] ]
+                nLocs = 0
+            else:
+                nLocs = parentObjInfo[ 'locs' ][ parentObjInfo[ 'id' ] ]
             if nLocs > 5:
                 break
         

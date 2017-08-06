@@ -42,9 +42,9 @@ class CommonClassifier ( StatelessActor ):
     def init( self, parameters, resources ):
         super( CommonClassifier, self ).init( parameters, resources )
         self.classifiers = {
-          'webserver' : re.compile( r'.*(?:\\|/)(?:w3wp\.exe|httpd\.exe|httpd|apache2|nginx|uwsgi|lighttpd.exe|lighttpd|php-cgi.exe|node.exe|node)', re.IGNORECASE ),
-          'developer' : re.compile( r'.*(?:\\|/)(?:devenv\.exe|msbuild\.exe|go|javac|javac\.exe|gcc|clang)', re.IGNORECASE ),
-          'database' : re.compile( r'.*(?:\\|/)(?:mysqld\.exe|mysqld|cassandra|oracle\.exe|mongos\.exe|mongos|postgres\.exe|postgres)', re.IGNORECASE ),
+          'webserver' : re.compile( r'.*(?:\\|/)(?:w3wp\.exe|httpd\.exe|httpd|apache2|nginx|uwsgi|lighttpd.exe|lighttpd|php-cgi.exe|node.exe|node)$', re.IGNORECASE ),
+          'developer' : re.compile( r'.*(?:\\|/)(?:devenv\.exe|msbuild\.exe|go|javac|javac\.exe|gcc|clang)$', re.IGNORECASE ),
+          'database' : re.compile( r'.*(?:\\|/)(?:mysqld\.exe|mysqld|cassandra|oracle\.exe|mongos\.exe|mongos|postgres\.exe|postgres)$', re.IGNORECASE ),
         }
 
     def process( self, detects, msg ):

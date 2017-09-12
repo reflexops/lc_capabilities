@@ -64,7 +64,7 @@ class VirusTotalKnownBad ( StatelessActor ):
         
         report = None
         for h in mtd[ 'obj' ].get( ObjectTypes.FILE_HASH, [] ):
-            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 12 ) )
+            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 2 ) )
             if vtReport.isSuccess:
                 report = {}
                 info = vtReport.data[ 'report' ]

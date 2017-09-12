@@ -48,8 +48,10 @@ class UnprivilegedProcesses ( StatelessActor ):
         
         filePath = _x_( event, '?/base.FILE_PATH' )
         userName = _x_( event, '?/base.USER_NAME' )
-        if filePath is not None and userName is not None:
-            if self.processes.match( filePath ) and self.blackListAccounts.match( userName ):
+        parentUserName = _x_( event, '?/base.PARENT/base.USER_NAME' )
+        if filePath is not None and userName is not None and parentUserName is not None:
+            if self.processes.match( filePath ) and ( self.blackListAccounts.match( userName ) or 
+                                                      self.blackListAccounts.match( parentUserName ) ):
                     detects.add( 90,
                                  'process created from privileged account',
                                  event )

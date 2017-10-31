@@ -14,7 +14,6 @@
 
 from beach.actor import Actor
 import re
-ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
 _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 
 class CommonClassifier ( object ):

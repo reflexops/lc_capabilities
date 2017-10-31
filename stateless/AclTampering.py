@@ -21,9 +21,9 @@ class AclTampering ( object ):
         self.icacls = re.compile( r'.*icacls\.exe', re.IGNORECASE )
         self.icaclsCommands = re.compile( r'.*(grant)', re.IGNORECASE )
 
-    def analyze( self, routing, event, mtd ):        
-        filePath = _x_( event, '?/base.FILE_PATH' )
-        cmdLine = _x_( event, '?/base.COMMAND_LINE' )
+    def analyze( self, event, sensor, *args ):        
+        filePath = _x_( event.data, '?/base.FILE_PATH' )
+        cmdLine = _x_( event.data, '?/base.COMMAND_LINE' )
         if filePath is not None and cmdLine is not None:
             if self.icacls.match( filePath ) and self.icaclsCommands.match( cmdLine ):
                 return True

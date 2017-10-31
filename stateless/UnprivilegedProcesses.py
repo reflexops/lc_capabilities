@@ -1,4 +1,4 @@
-# Copyright 2015 refractionPOINT
+# Copyright 2017 Google, Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@ from beach.actor import Actor
 import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
-class ShadowVolumeTampering ( object ):
+class UnprivilegedProcesses ( object ):
     def __init__( self, fromActor ):
-        self.vssadmin = re.compile( r'.*vssadmin\.exe', re.IGNORECASE )
-        self.vssadminCommands = re.compile( r'.*(delete shadows)|(resize shadowstorage)', re.IGNORECASE )
-        self.wmic = re.compile( r'.*wmic\.exe', re.IGNORECASE )
-        self.wmicCommands = re.compile( r'.*(shadowcopy delete)', re.IGNORECASE )
+        self.processes = re.compile( r'.*(/|\\)((chrome)|(firefox)|(iexplore)|(winword)|(excel)|(powerpnt)|(outlook)|(acrord32))\.exe', re.IGNORECASE )
+        self.blackListAccounts = re.compile( r'^nt authority.*', re.IGNORECASE )
 
     def analyze( self, event, sensor, *args ):
         filePath = _x_( event.data, '?/base.FILE_PATH' )
-        cmdLine = _x_( event.data, '?/base.COMMAND_LINE' )
-        if filePath is not None and cmdLine is not None:
-            if self.vssadmin.match( filePath ) and self.vssadminCommands.match( cmdLine ):
-                return True
-            elif self.wmic.match( filePath ) and self.wmicCommands.match( cmdLine ):
+        userName = _x_( event.data, '?/base.USER_NAME' )
+        parentUserName = _x_( event.data, '?/base.PARENT/base.USER_NAME' )
+        if filePath is not None and userName is not None and parentUserName is not None:
+            if self.processes.match( filePath ) and ( self.blackListAccounts.match( userName ) or 
+                                                      self.blackListAccounts.match( parentUserName ) ):
                 return True
         return False

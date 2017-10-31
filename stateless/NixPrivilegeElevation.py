@@ -17,7 +17,7 @@ import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
 class NixPrivilegeElevation ( object ):
-    def __init__( self ):
+    def __init__( self, fromActor ):
         pass
 
     def analyze( self, event, sensor, *args ):

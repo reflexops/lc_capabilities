@@ -17,7 +17,7 @@ import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
 class AppLockerBypasses ( object ):
-    def __init__( self ):
+    def __init__( self, fromActor ):
         self.patterns = [ ( re.compile( r'.*rundll32\.exe$', re.IGNORECASE ), re.compile( r'.*(mshtml,RunHTMLApplication)|(shell32.dll,Control_RunDLL).*', re.IGNORECASE ) ),
                           ( re.compile( r'.*regsvr32\.exe$', re.IGNORECASE ), re.compile( r'.*/\.sct.*', re.IGNORECASE ) ),
                           ( re.compile( r'.*regsvcs\.exe$', re.IGNORECASE ), re.compile( r'.*/U.+regsvcs\.dll.*', re.IGNORECASE ) ),

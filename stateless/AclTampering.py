@@ -17,11 +17,11 @@ import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
 class AclTampering ( object ):
-    def __init__( self ):
+    def __init__( self, fromActor ):
         self.icacls = re.compile( r'.*icacls\.exe', re.IGNORECASE )
         self.icaclsCommands = re.compile( r'.*(grant)', re.IGNORECASE )
 
-    def analyze( self, event, sensor, *args ):        
+    def analyze( self, event, sensor, *args ):
         filePath = _x_( event.data, '?/base.FILE_PATH' )
         cmdLine = _x_( event.data, '?/base.COMMAND_LINE' )
         if filePath is not None and cmdLine is not None:

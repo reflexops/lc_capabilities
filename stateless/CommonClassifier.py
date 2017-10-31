@@ -17,7 +17,7 @@ import re
 _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 
 class CommonClassifier ( object ):
-    def __init__( self ):
+    def __init__( self, fromActor ):
         self.classifiers = {
           'webserver' : re.compile( r'.*(?:\\|/)(?:w3wp\.exe|httpd\.exe|httpd|apache2|nginx|uwsgi|lighttpd.exe|lighttpd|php-cgi.exe|node.exe|node)$', re.IGNORECASE ),
           'developer' : re.compile( r'.*(?:\\|/)(?:devenv\.exe|msbuild\.exe|go|javac|javac\.exe|gcc|clang)$', re.IGNORECASE ),

@@ -17,8 +17,7 @@ import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
 class AclTampering ( object ):
-    def init( self, parameters, resources ):
-        super( AclTampering, self ).init( parameters, resources )
+    def __init__( self ):
         self.icacls = re.compile( r'.*icacls\.exe', re.IGNORECASE )
         self.icaclsCommands = re.compile( r'.*(grant)', re.IGNORECASE )
 

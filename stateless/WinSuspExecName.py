@@ -18,7 +18,6 @@ _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 
 class WinSuspExecName ( object ):
     def __init__( self, fromActor ):
-        super( WinSuspExecName, self ).init( parameters, resources )
         self.susp = re.compile( r'.*((\.txt)|(\.doc.?)|(\.ppt.?)|(\.xls.?)|(\.zip)|(\.rar)|(\.rtf)|(\.jpg)|(\.gif)|(\.pdf)|(\.wmi)|(\.avi)|( {5}.*))\.exe', re.IGNORECASE )
         self.rtlo = re.compile( r'.*\xE2\x80\x8F.*' )
 

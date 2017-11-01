@@ -20,7 +20,7 @@ class VirusTotalKnownBad ( object ):
         self.vtReport = fromActor.getActorHandle( 'analytics/virustotal' )
 
         # Minimum number of AVs saying it's a hit before we flag it
-        self.threshold = parameters.get( 'min_av', 1 )
+        self.threshold = 1
 
     def analyze( self, event, sensor, *args ):
         report = None

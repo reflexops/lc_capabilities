@@ -30,3 +30,4 @@ class CommonClassifier ( object ):
             for tag, r in self.classifiers.iteritems():
                 if not sensor.isTagged( tag ) and r.match( filePath ):
                     sensor.tag( tag, ttl = ( 60 * 60 * 24 * 7 ) )
+        return False

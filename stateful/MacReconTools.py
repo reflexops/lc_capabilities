@@ -22,5 +22,6 @@ class MacReconTools ( object ):
     def getDescriptor( self ):
         reconBurst = ProcessBurst( procRegExp = r'.*/((ifconfig)|(arp)|(route)|(ping)|(traceroute)|(nslookup)|(netstat)|(wget)|(curl))',
         						   nPerBurst = 3,
-        						   withinMilliSeconds = 5 * 1000 )
+        						   withinMilliSeconds = 5 * 1000,
+                                   isForWindows = False )
         return reconBurst

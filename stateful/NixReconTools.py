@@ -15,7 +15,7 @@
 from beach.actor import Actor
 ProcessBurst = Actor.importLib( 'analytics/StateAnalysis/descriptors', 'ProcessBurst' )
 
-class MacReconTools ( object ):
+class NixReconTools ( object ):
     def __init__( self, fromActor ):
         pass
 

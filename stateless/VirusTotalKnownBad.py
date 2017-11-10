@@ -37,5 +37,6 @@ class VirusTotalKnownBad ( object ):
                     report = None
 
         if report is not None:
+            event.mtd[ 'vt' ] = report
             return True
         return False

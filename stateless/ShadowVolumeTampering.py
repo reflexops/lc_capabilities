@@ -24,6 +24,9 @@ class ShadowVolumeTampering ( object ):
         self.wmicCommands = re.compile( r'.*(shadowcopy delete)', re.IGNORECASE )
 
     def analyze( self, event, sensor, *args ):
+        if not sensor.aid.isWindows():
+            return False
+
         filePath = _x_( event.data, '?/base.FILE_PATH' )
         cmdLine = _x_( event.data, '?/base.COMMAND_LINE' )
         if filePath is not None and cmdLine is not None:

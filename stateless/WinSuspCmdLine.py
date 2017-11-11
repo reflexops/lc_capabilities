@@ -23,6 +23,9 @@ class WinSuspCmdLine ( object ):
         self.scmd = { 'rtlo' : re.compile( r'.*\xE2\x80\x8F.*' ),}
 
     def analyze( self, event, sensor, *args ):
+        if not sensor.aid.isWindows():
+            return False
+
         isSusp = False
 
         for cmdLine in _xm_( event.data, '?/base.COMMAND_LINE' ):

@@ -22,6 +22,9 @@ class WinSuspExecName ( object ):
         self.rtlo = re.compile( r'.*\xE2\x80\x8F.*' )
 
     def analyze( self, event, sensor, *args ):
+        if not sensor.aid.isWindows():
+            return False
+            
         for filePath in _xm_( event.data, '?/base.FILE_PATH' ):
             if self.susp.match( filePath ) or self.rtlo.match( filePath ):
                 return True

@@ -21,6 +21,9 @@ class NixPrivilegeElevation ( object ):
         pass
 
     def analyze( self, event, sensor, *args ):
+        if sensor.aid.isWindows():
+            return False
+            
         procUid = _x_( event.data, '?/base.USER_ID' )
         procPath = _x_( event.data, '?/base.FILE_PATH' )
         if procUid is not None and 0 == procUid and procPath is not None and not procPath.lower().endswith( 'sudo' ):

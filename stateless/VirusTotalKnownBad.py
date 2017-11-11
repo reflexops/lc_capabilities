@@ -23,6 +23,10 @@ class VirusTotalKnownBad ( object ):
         self.threshold = 2
 
     def analyze( self, event, sensor, *args ):
+        # Don't look at detections since we could recursively keep going.
+        if event.dataType is not None and event.dataType.startswith( 'detection_' ):
+            return False
+
         report = None
         for h in event.mtd[ 'obj' ].get( ObjectTypes.FILE_HASH, [] ):
             vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 2 ) )

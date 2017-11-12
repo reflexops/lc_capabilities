@@ -12,12 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+###############################################################################
+# Metadata
+'''
+LC_DETECTION_MTD_START
+{
+    "type" : "stateless",
+    "description" : "Detects execution from suspicious locations of Windows.",
+    "requirements" : "",
+    "feeds" : [ "notification.NEW_PROCESS",
+                "notification.CODE_IDENTITY" ],
+    "platform" : "windows",
+    "author" : "maximelb@google.com",
+    "version" : "1.0",
+    "scaling_factor" : 1000,
+    "n_concurrent" : 5,
+    "usage" : {}
+}
+LC_DETECTION_MTD_END
+'''
+###############################################################################
+
 from beach.actor import Actor
 import re
+ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
+StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
 _xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
 
-class WinSuspExecLoc ( object ):
-    def __init__( self, fromActor ):
+class WinSuspExecLoc ( StatelessActor ):
+    def init( self, parameters, resources ):
+        super( WinSuspExecLoc, self ).init( parameters, resources )
         self.slocs = { 'tasks' : re.compile( r'.*windows\\(?:(?:system32)|(?:syswow64))\\tasks\\.*',
                                              re.IGNORECASE ),
                        'recycler' : re.compile( r'.*recycle.*', re.IGNORECASE ),
@@ -29,12 +53,12 @@ class WinSuspExecLoc ( object ):
                        'perflogs' : re.compile( r'.*\\perflogs\\.*', re.IGNORECASE ),
                        'virt_device' : re.compile( r'\\\\\\.\\.*', re.IGNORECASE ) }
 
-    def analyze( self, event, sensor, *args ):
-        if not sensor.aid.isWindows():
-              return False
-              
-        for filePath in _xm_( event.data, '?/base.FILE_PATH' ):
+    def process( self, detects, msg ):
+        routing, event, mtd = msg.data
+
+        for filePath in _xm_( event, '?/base.FILE_PATH' ):
             for k, v in self.slocs.iteritems():
                 if v.match( filePath ):
-                    return True
-        return False
+                    detects.add( 90, 
+                                 'binary executing from a suspicious location',
+                                 event )

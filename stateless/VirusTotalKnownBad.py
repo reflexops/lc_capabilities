@@ -12,59 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-###############################################################################
-# Metadata
-'''
-LC_DETECTION_MTD_START
-{
-    "type" : "stateless",
-    "description" : "Detects code matching VirusTotal malicious reports.",
-    "requirements" : "",
-    "feeds" : [ "notification.CODE_IDENTITY",
-                "notification.OS_SERVICES_REP",
-                "notification.OS_DRIVERS_REP",
-                "notification.OS_AUTORUNS_REP" ],
-    "platform" : "common",
-    "author" : "maximelb@google.com",
-    "version" : "1.0",
-    "scaling_factor" : 1000,
-    "n_concurrent" : 5,
-    "usage" : {
-        
-    }
-}
-LC_DETECTION_MTD_END
-'''
-###############################################################################
-
 from beach.actor import Actor
 ObjectTypes = Actor.importLib( 'utils/ObjectsDb', 'ObjectTypes' )
-StatelessActor = Actor.importLib( 'Detects', 'StatelessActor' )
 
-class VirusTotalKnownBad ( StatelessActor ):
-    def init( self, parameters, resources ):
-        super( VirusTotalKnownBad, self ).init( parameters, resources )
-
-        self.original_process = self.handle( 'process', self.delayProcess )
-
-        self.vtReport = self.getActorHandle( 'analytics/virustotal' )
+class VirusTotalKnownBad ( object ):
+    def __init__( self, fromActor ):
+        self.vtReport = fromActor.getActorHandle( 'analytics/virustotal' )
 
         # Minimum number of AVs saying it's a hit before we flag it
-        self.threshold = parameters.get( 'min_av', 1 )
+        self.threshold = 2
 
-    # This actor can be very asynchronous depending on the VT API limits.
-    # So to avoid the analytics thinking we've timed out, we will make
-    # the lookups asynchronous.
-    def delayProcess( self, msg ):
-        self.delay( 0, self.original_process, msg )
-        return ( True, )
+    def analyze( self, event, sensor, *args ):
+        # Don't look at detections since we could recursively keep going.
+        if event.dataType is not None and event.dataType.startswith( 'detection_' ):
+            return False
 
-    def process( self, detects, msg ):
-        routing, event, mtd = msg.data
-        
         report = None
-        for h in mtd[ 'obj' ].get( ObjectTypes.FILE_HASH, [] ):
-            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 12 ) )
+        for h in event.mtd[ 'obj' ].get( ObjectTypes.FILE_HASH, [] ):
+            vtReport = self.vtReport.request( 'get_report', { 'hash' : h }, timeout = ( 60 * 60 * 2 ) )
             if vtReport.isSuccess:
                 report = {}
                 info = vtReport.data[ 'report' ]
@@ -76,6 +41,6 @@ class VirusTotalKnownBad ( StatelessActor ):
                     report = None
 
         if report is not None:
-            detects.add( 70,
-                         'bad hash from virus total',
-                         { 'report' : report, 'hash' : h, 'event' : event } )
+            event.mtd[ 'vt' ] = report
+            return True
+        return False

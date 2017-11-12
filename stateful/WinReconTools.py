@@ -12,40 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-###############################################################################
-# Metadata
-'''
-LC_DETECTION_MTD_START
-{
-    "type" : "stateful",
-    "description" : "Detects bursts of recon tool activity on Windows.",
-    "requirements" : "",
-    "feeds" : [],
-    "platform" : "windows",
-    "author" : "maximelb@google.com",
-    "version" : "1.0",
-    "scaling_factor" : 500,
-    "n_concurrent" : 5,
-    "usage" : {}
-}
-LC_DETECTION_MTD_END
-'''
-###############################################################################
-
 from beach.actor import Actor
 import re
 ProcessBurst = Actor.importLib( 'analytics/StateAnalysis/descriptors', 'ProcessBurst' )
-StatefulActor = Actor.importLib( 'Detects', 'StatefulActor' )
 
-class WinReconTools ( StatefulActor ):
-    def initMachines( self, parameters ):
-        self.shardingKey = 'agentid'
+class WinReconTools ( object ):
+    def __init__( self, fromActor ):
+        pass
 
-        reconBurst = ProcessBurst( name = 'windows_recon_burst', 
-        						   priority = 1,
-        						   summary = 'Burst of recon activity',
-        						   procRegExp = re.compile( r'.*(/|\\)((ipconfig)|(arp)|(route)|(ping)|(vssadmin)|(traceroute)|(nslookup)|(netstat)|(wmic)|(net\d?)|(whoami)|(systeminfo))\.exe', re.IGNORECASE),
-        						   nPerBurst = 3,
-        						   withinMilliSeconds = 5 * 1000 )
-        
-        self.addStateMachineDescriptor( reconBurst )
+    def getDescriptor( self ):
+        reconBurst = ProcessBurst( procRegExp = re.compile( r'.*(/|\\)((ipconfig)|(arp)|(route)|(ping)|(vssadmin)|(traceroute)|(nslookup)|(netstat)|(wmic)|(net\d?)|(whoami)|(systeminfo))\.exe', re.IGNORECASE),
+                                   nPerBurst = 4,
+                                   withinMilliSeconds = 5 * 1000,
+                                   isForWindows = True,
+                                   isForMac = False,
+                                   isForLinux = False )
+        return reconBurst

@@ -16,18 +16,17 @@ from beach.actor import Actor
 import re
 _x_ = Actor.importLib( 'utils/hcp_helpers', '_x_' )
 
-class NixPrivilegeElevation ( object ):
+class UnprivilegedProcesses ( object ):
     def __init__( self, fromActor ):
-        pass
+        self.processes = re.compile( r'.*(/|\\)((chrome)|(firefox)|(iexplore)|(winword)|(excel)|(powerpnt)|(outlook)|(acrord32))\.exe', re.IGNORECASE )
+        self.blackListAccounts = re.compile( r'^nt authority.*', re.IGNORECASE )
 
     def analyze( self, event, sensor, *args ):
-        if sensor.aid.isWindows():
-            return False
-            
-        procUid = _x_( event.data, '?/base.USER_ID' )
-        procPath = _x_( event.data, '?/base.FILE_PATH' )
-        if procUid is not None and 0 == procUid and procPath is not None and not procPath.lower().endswith( 'sudo' ):
-            parentUid = _x_( event.data, '?/base.PARENT/base.USER_ID' )
-            if parentUid is not None and 0 != parentUid:
+        filePath = _x_( event.data, '?/base.FILE_PATH' )
+        userName = _x_( event.data, '?/base.USER_NAME' )
+        parentUserName = _x_( event.data, '?/base.PARENT/base.USER_NAME' )
+        if filePath is not None and userName is not None and parentUserName is not None:
+            if self.processes.match( filePath ) and ( self.blackListAccounts.match( userName ) or 
+                                                      self.blackListAccounts.match( parentUserName ) ):
                 return True
         return False

@@ -13,19 +13,15 @@
 # limitations under the License.
 
 from beach.actor import Actor
-import re
-_xm_ = Actor.importLib( 'utils/hcp_helpers', '_xm_' )
+ProcessBurst = Actor.importLib( 'analytics/StateAnalysis/descriptors', 'ProcessBurst' )
 
-class WinSuspExecName ( object ):
+class NixReconTools ( object ):
     def __init__( self, fromActor ):
-        self.susp = re.compile( r'.*((\.txt)|(\.doc.?)|(\.ppt.?)|(\.xls.?)|(\.zip)|(\.rar)|(\.rtf)|(\.jpg)|(\.gif)|(\.pdf)|(\.wmi)|(\.avi)|( {5}.*))\.exe', re.IGNORECASE )
-        self.rtlo = re.compile( r'.*\xE2\x80\x8F.*' )
+        pass
 
-    def analyze( self, event, sensor, *args ):
-        if not sensor.aid.isWindows():
-            return False
-            
-        for filePath in _xm_( event.data, '?/base.FILE_PATH' ):
-            if self.susp.match( filePath ) or self.rtlo.match( filePath ):
-                return True
-        return False
+    def getDescriptor( self ):
+        reconBurst = ProcessBurst( procRegExp = r'.*/((ifconfig)|(arp)|(route)|(ping)|(traceroute)|(nslookup)|(netstat)|(wget)|(curl))',
+        						   nPerBurst = 3,
+        						   withinMilliSeconds = 5 * 1000,
+                                   isForWindows = False )
+        return reconBurst

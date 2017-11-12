@@ -26,6 +26,10 @@ class WinSuspCmdLine ( object ):
         if not sensor.aid.isWindows():
             return False
 
+        if event.dataType not in ( 'notification.NEW_PROCESS', 
+                                   'notification.EXISTING_PROCESS' ):
+            return False
+
         isSusp = False
 
         for cmdLine in _xm_( event.data, '?/base.COMMAND_LINE' ):

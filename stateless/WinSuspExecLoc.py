@@ -31,8 +31,13 @@ class WinSuspExecLoc ( object ):
 
     def analyze( self, event, sensor, *args ):
         if not sensor.aid.isWindows():
-              return False
-              
+            return False
+        
+        if event.dataType not in ( 'notification.NEW_PROCESS', 
+                                   'notification.EXISTING_PROCESS', 
+                                   'notification.CODE_IDENTITY' ):
+            return False
+
         for filePath in _xm_( event.data, '?/base.FILE_PATH' ):
             for k, v in self.slocs.iteritems():
                 if v.match( filePath ):

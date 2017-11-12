@@ -27,6 +27,10 @@ class ShadowVolumeTampering ( object ):
         if not sensor.aid.isWindows():
             return False
 
+        if event.dataType not in ( 'notification.NEW_PROCESS', 
+                                   'notification.EXISTING_PROCESS' ):
+            return False
+
         filePath = _x_( event.data, '?/base.FILE_PATH' )
         cmdLine = _x_( event.data, '?/base.COMMAND_LINE' )
         if filePath is not None and cmdLine is not None:

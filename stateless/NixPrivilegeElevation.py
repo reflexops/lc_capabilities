@@ -23,6 +23,10 @@ class NixPrivilegeElevation ( object ):
     def analyze( self, event, sensor, *args ):
         if sensor.aid.isWindows():
             return False
+
+        if event.dataType not in ( 'notification.NEW_PROCESS', 
+                                   'notification.EXISTING_PROCESS' ):
+            return False
             
         procUid = _x_( event.data, '?/base.USER_ID' )
         procPath = _x_( event.data, '?/base.FILE_PATH' )

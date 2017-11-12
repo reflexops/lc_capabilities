@@ -24,6 +24,11 @@ class WinSuspExecName ( object ):
     def analyze( self, event, sensor, *args ):
         if not sensor.aid.isWindows():
             return False
+
+        if event.dataType not in ( 'notification.NEW_PROCESS', 
+                                   'notification.EXISTING_PROCESS', 
+                                   'notification.CODE_IDENTITY' ):
+            return False
             
         for filePath in _xm_( event.data, '?/base.FILE_PATH' ):
             if self.susp.match( filePath ) or self.rtlo.match( filePath ):

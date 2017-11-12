@@ -22,6 +22,12 @@ class UnprivilegedProcesses ( object ):
         self.blackListAccounts = re.compile( r'^nt authority.*', re.IGNORECASE )
 
     def analyze( self, event, sensor, *args ):
+        if not sensor.aid.isWindows():
+            return False
+
+        if event.dataType not in ( 'notification.NEW_PROCESS', ):
+            return False
+
         filePath = _x_( event.data, '?/base.FILE_PATH' )
         userName = _x_( event.data, '?/base.USER_NAME' )
         parentUserName = _x_( event.data, '?/base.PARENT/base.USER_NAME' )
